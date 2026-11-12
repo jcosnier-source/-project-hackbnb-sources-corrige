@@ -1,0 +1,32 @@
+services:
+  back:
+    image: python:3
+    working_dir: /app
+    command: bash -c "pip3 install -r requirements.txt && python3 app.py"
+    volumes:
+      - ./back:/app
+    environment:
+      APP_ORIGIN_HOST: http://localhost:9000
+      # CORRECTIF D6 : la clé Stripe était committée en clair ici (en plus
+      # de l'historique git du commit ef5503c). Elle est désormais lue
+      # depuis un fichier .env non versionné (voir .env.example) : la
+      # clé ci-avant doit être considérée comme compromise et RÉVOQUÉE/
+      # régénérée depuis le dashboard Stripe, indépendamment de ce correctif.
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+
+  front:
+    image: node:22
+    working_dir: /app
+    command: bash -c "npm install && npm run dev -- --host"
+    volumes:
+      - ./front:/app
+
+  apache:
+    image: httpd:latest
+    ports:
+      - 9000:80
+    volumes:
+      - ./apache/apache-dev.conf:/usr/local/apache2/conf/httpd.conf
+    depends_on:
+      - back
+      - front
